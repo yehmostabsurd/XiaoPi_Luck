@@ -35,7 +35,7 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 		#1. get a frame and show ret, 
 		_, frame = cap.read() 
 		# height 480; width 640; channel 3
-		cv2.imshow('Capture', frame)
+		#cv2.imshow('Capture', frame)
 		#2. change to hsv model 
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) 
 		#3. Threshold the HSV image to get only red colors and get mask 
@@ -141,12 +141,12 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 					last_xdiff = x_diff
 					last_ydiff = y_diff
 			
-		if ((time.time()-last_contour_receive_time) < waiting_threshold/2000.):
-			cv2.circle(frame, (cx, cy), 7, (255, 255, 255), -1) #Draw center of object
-			cv2.drawContours(frame,contours,-1,(255,0,0),3) #Draw contour of object
+		#if ((time.time()-last_contour_receive_time) < waiting_threshold/2000.):
+			#cv2.circle(frame, (cx, cy), 7, (255, 255, 255), -1) #Draw center of object
+			#cv2.drawContours(frame,contours,-1,(255,0,0),3) #Draw contour of object
 		
-		cv2.circle(frame, (center_x, center_y), 2, (0, 0, 255), -1) #Draw center of camera
-		cv2.imshow('frame',frame) #Display Frame
+		#cv2.circle(frame, (center_x, center_y), 2, (0, 0, 255), -1) #Draw center of camera
+		#cv2.imshow('frame',frame) #Display Frame
 		
 		cal_time = time.time() - start_time_count
 		print("Running_time = ", cal_time)
