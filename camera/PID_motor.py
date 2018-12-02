@@ -22,7 +22,9 @@ motorPinT = 12
 # connect to pi gpio Daemon
 pi_hw = pigpio.pi()
 
-currentDutyCycleT = 115000 # look at forward 
+currentDutyCycleT = 115000 	# look at forward 
+cx = 0						# Reference for motors angular velocity
+area = 0					# Reference for motors velocity
 
 #Control the wheels
 def control_wheels():
@@ -30,18 +32,18 @@ def control_wheels():
 	
 
 #Rotate the camera to make the balloon in the center of the image
-def rotate_camera(dir, strength):
+def rotate_camera(direction, strength):
 	global currentDutyCycleT
 	full_up = 75000 # 1.5ms -> up
 	full_down = 115000 # 2.3ms -> forward
 	increment = (full_down - full_up) / 200 
 	#camera up
-	if dir == 1: 
+	if direction == 1: 
 		currentDutyCycleT = currentDutyCycleT - strength * increment
 		if currentDutyCycleT < full_up:
 			currentDutyCycleT = full_up
 	
-	elif dir == 0: 
+	elif direction == 0: 
 		pi_hw.hardware_PWM(motorPinR, 50, 0) #50 Hz Freq. 0% duty cycle
 		pi_hw.hardware_PWM(motorPinT, 50, 0) #50 Hz Freq. 0% duty cycle
 		currentDutyCycleT = currentDutyCycleT - strength * increment
@@ -58,7 +60,9 @@ def rotate_camera(dir, strength):
 
 tilt_time = time.time() # record the length of giving order to tilt
 #Master Process --- recognize the red balloon
-def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_motor_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
+def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
+	global cx	# Reference for motors angular velocity
+	global area # Reference for motors velocity
 	last_contour_receive_time = 0
 	start_time = 0
 	start_queue = datetime.now()
@@ -68,7 +72,6 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_mo
 	global count2
 	global count3
 	global tilt_time
-	tilt_lst = [0,0]
 	time_total_run = time.time()
 	x_diff = 0
 	y_diff = 0
@@ -132,9 +135,9 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_mo
 						# print (M)
 						#calcualte the center coordinate
 						if M['m00'] != 0:	
-							cx = int(M['m10']/M['m00'])
-							cy = int(M['m01']/M['m00'])
-							area = M['m00']
+							cx = int(M['m10']/M['m00'])		# columns for angular velocity
+							cy = int(M['m01']/M['m00'])		# rows
+							area = M['m00']					# area for velocity
 							#PID control Algo to calculate strength to control servo
 							x_diff = abs(cx - center_x)
 							y_diff = abs(cy - center_y)
@@ -180,21 +183,20 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_mo
 							control_wheels()
 							#print('the car need to turn left and mvoe forward\n')
 						if (y_diff <= y_tlr):
-						# do nothing within tolerance range
+							# do nothing within tolerance range
 							b = 1
-						elif (cy < center_y):
+						elif (cy > center_y):
 							rotate_camera(1,strength_y)
-							print('the camera need to raise its head up\n')
-						
+							#print('the camera need to raise its head up\n')
+							
 						else:
 							rotate_camera(-1,strength_y)
-							print('the camera need to low its head down\n')
+							#print('the camera need to low its head down\n')
 						length_time = time.time() - tilt_time
 						tilt_time = time.time()
 						last_area = area
 						last_xdiff = x_diff
 						last_ydiff = y_diff
-						
 						print("tilt time", length_time)
 				
 			#if ((time.time()-last_contour_receive_time) < waiting_threshold/1000.):
@@ -262,11 +264,6 @@ def process_contour_2(run_flag, send_frame_queue, receive_contour_queue, p_start
 			p_start_turn.value = 3 # and change it to worker process 3's turn
 			#print("Processor 2's Turn - Receive Mask Successfully")
 			#print(mask.shape)
-				 # 1. Implement the open and close operation to get rid of noise and solidify an object
-			# maskOpen=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernelOpen)
-			# maskClose=cv2.morphologyEx(maskOpen,cv2.MORPH_CLOSE,kernelClose)
-			# # 2. Extract contour
-			# contours,h=cv2.findContours(maskClose.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 			
 			#find the contours 
 			contours,h=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
@@ -296,13 +293,14 @@ def process_contour_3(run_flag, send_frame_queue, receive_contour_queue, p_start
 		if ((not send_frame_queue.empty()) and (p_start_turn.value == 3)):
 			mask = send_frame_queue.get()
 			count3 += 1
+			
 			p_start_turn.value = 1 # and change it to worker process 1's turn
-			print("Processor 3's Turn - Receive Mask Successfully")
-			print(mask.shape)
-				# # 1. Implement the open and close operation to get rid of noise and solidify an object
+			#print("Processor 3's Turn - Receive Mask Successfully")
+			#print(mask.shape)
+				 # 1. Implement the open and close operation to get rid of noise and solidify an object
 			# maskOpen=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernelOpen)
 			# maskClose=cv2.morphologyEx(maskOpen,cv2.MORPH_CLOSE,kernelClose)
-			# 2. Extract contour
+			# # 2. Extract contour
 			# contours,h=cv2.findContours(maskClose.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 			
 			#find the contours 
@@ -314,9 +312,9 @@ def process_contour_3(run_flag, send_frame_queue, receive_contour_queue, p_start
 			#	a = 1 # wait
 			#p_end_turn.value = 1
 			receive_contour_queue.put(contours)
-			print("processor_3 : put contour successfully\n")
+			#print("processor_3 : put contour successfully\n")
 		else:
-			print("Processor 3 Didn't Receive Frame, sleep for 10ms")
+			#print("Processor 3 Didn't Receive Frame, sleep for 10ms")
 			time.sleep(0.01)
 		currentTime = datetime.now()
 		currentTime_ms = currentTime.second *1000 + currentTime.microsecond/1000
@@ -359,16 +357,14 @@ if __name__ == '__main__':
 	p_end_turn = Value('i', 1)
 	send_frame_queue = Queue()#send frame to queue 
 	receive_contour_queue = Queue()# send the processed contour to the queue
-	send_motor_queue = Queue()
 	p_start_lock = Lock() #Safety lock, but didnt use
 	p_end_lock = Lock() #Safety lock, but didnt use
 	
-	p0 = Process(target=recognize_balloon, args=(run_flag, send_frame_queue, receive_contour_queue, send_motor_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
+	p0 = Process(target=recognize_balloon, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
 	p1 = Process(target=process_contour_1, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
 	p2 = Process(target=process_contour_2, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
-		
 	p3 = Process(target=process_contour_3, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
 		

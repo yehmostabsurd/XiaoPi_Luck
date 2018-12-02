@@ -30,18 +30,18 @@ def control_wheels():
 	
 
 #Rotate the camera to make the balloon in the center of the image
-def rotate_camera(dir, strength):
+def rotate_camera(direction, strength):
 	global currentDutyCycleT
 	full_up = 75000 # 1.5ms -> up
 	full_down = 115000 # 2.3ms -> forward
 	increment = (full_down - full_up) / 200 
 	#camera up
-	if dir == 1: 
+	if direction == 1: 
 		currentDutyCycleT = currentDutyCycleT - strength * increment
 		if currentDutyCycleT < full_up:
 			currentDutyCycleT = full_up
 	
-	elif dir == 0: 
+	elif direction == 0: 
 		pi_hw.hardware_PWM(motorPinR, 50, 0) #50 Hz Freq. 0% duty cycle
 		pi_hw.hardware_PWM(motorPinT, 50, 0) #50 Hz Freq. 0% duty cycle
 		currentDutyCycleT = currentDutyCycleT - strength * increment
@@ -106,8 +106,10 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 			else: 
 				#only put the mask in queue if it has past 10ms and there are less than 4 masks in queue
 				if (delta_time_tol_ms > waiting_threshold) and (send_frame_queue.qsize() < 4) :
+					
 					start_queue = cur_time # Update last send to queue time
 					send_frame_queue.put(mask)  # put mask in queue
+					print("send_frame_queue", send_frame_queue.qsize())
 					count_put += 1
 					#print("put the mask to queue\n")
 					
