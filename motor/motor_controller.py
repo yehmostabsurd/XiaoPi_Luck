@@ -42,9 +42,11 @@ class motor_controller():
 		dr = 1 if vr > 0 else 0
                 print("sending motor control speedl {} in {} dir, speedr {} in {} dir".format(speedl, dl, speedr, dr) )
                 self.rr.set_motors(speedl, dl, speedr, dr)
-	except KeyboardInterrupt:
-		print("Exiting speed controller!!")
+                #time.sleep(0.03)
+	except KeyboardInterrupt as e:
+		print("Exiting motor_controller.py!!")
 		self.rr.cleanup()
+		raise Exception('Exiting motor_controller.py after cleanup')
 		
     def clean(self):
 	self.rr.cleanup()

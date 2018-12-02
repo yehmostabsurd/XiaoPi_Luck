@@ -8,7 +8,13 @@ if (len(sys.argv) > 1):
 else:
     vel = 1000.
     omega = 0.
+
 controller = motor_controller()
-controller.set_control(vel, omega)
-time.sleep(3)
-controller.clean()
+
+while True:
+    try:
+        controller.set_control(vel, omega)
+        #time.sleep(0.03)
+    except KeyboardInterrupt:
+        controller.clean()
+        print("clean speed controller")
