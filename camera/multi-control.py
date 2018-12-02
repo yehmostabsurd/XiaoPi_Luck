@@ -58,7 +58,7 @@ def rotate_camera(dir, strength):
 
 tilt_time = time.time() # record the length of giving order to tilt
 #Master Process --- recognize the red balloon
-def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_motor_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
+def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
 	last_contour_receive_time = 0
 	start_time = 0
 	start_queue = datetime.now()
@@ -68,7 +68,6 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_mo
 	global count2
 	global count3
 	global tilt_time
-	tilt_lst = [0,0]
 	time_total_run = time.time()
 	x_diff = 0
 	y_diff = 0
@@ -183,23 +182,17 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, send_mo
 							# do nothing within tolerance range
 							b = 1
 						elif (cy > center_y):
-							tilt_lst[0] = 1
-							tilt_lst[1] = strength_y
+							rotate_camera(1,strength_y)
 							#print('the camera need to raise its head up\n')
 							
 						else:
-							tilt_lst[0] = -1
-							tilt_lst[1] = strength_y
+							rotate_camera(-1,strength_y)
 							#print('the camera need to low its head down\n')
 						length_time = time.time() - tilt_time
 						tilt_time = time.time()
 						last_area = area
 						last_xdiff = x_diff
 						last_ydiff = y_diff
-						if (send_motor_queue.qsize() < 2) :
-							send_motor_queue.put(tilt_lst)  # put mask in queue
-							count_motor_put += 1
-							#print("put the tilt to queue\n")
 						print("tilt time", length_time)
 				
 			#if ((time.time()-last_contour_receive_time) < waiting_threshold/1000.):
@@ -264,14 +257,9 @@ def process_contour_2(run_flag, send_frame_queue, receive_contour_queue, p_start
 			mask = send_frame_queue.get()
 			count2 += 1
 			print("count2   %d" % count2)
-			p_start_turn.value = 1 # and change it to worker process 3's turn
+			p_start_turn.value = 3 # and change it to worker process 3's turn
 			#print("Processor 2's Turn - Receive Mask Successfully")
 			#print(mask.shape)
-				 # 1. Implement the open and close operation to get rid of noise and solidify an object
-			# maskOpen=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernelOpen)
-			# maskClose=cv2.morphologyEx(maskOpen,cv2.MORPH_CLOSE,kernelClose)
-			# # 2. Extract contour
-			# contours,h=cv2.findContours(maskClose.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 			
 			#find the contours 
 			contours,h=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
@@ -292,16 +280,40 @@ def process_contour_2(run_flag, send_frame_queue, receive_contour_queue, p_start
 	print("Quiting Processor 2")
 	
 # Function for the Worker Process 3
-def process_motor_3(run_flag, send_motor_queue, p_start_lock, p_end_lock):
+def process_contour_3(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock):
 	global count3
 	while (run_flag.value):
-		#startTime = datetime.now()
-		#startTime_ms = startTime.second *1000 + startTime.microsecond/1000
+		startTime = datetime.now()
+		startTime_ms = startTime.second *1000 + startTime.microsecond/1000
 		
-		if (not send_motor_queue.empty()):
-			tilt_lst = send_motor_queue.get()
+		if ((not send_frame_queue.empty()) and (p_start_turn.value == 3)):
+			mask = send_frame_queue.get()
 			count3 += 1
 			
+			p_start_turn.value = 1 # and change it to worker process 1's turn
+			#print("Processor 3's Turn - Receive Mask Successfully")
+			#print(mask.shape)
+				 # 1. Implement the open and close operation to get rid of noise and solidify an object
+			# maskOpen=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernelOpen)
+			# maskClose=cv2.morphologyEx(maskOpen,cv2.MORPH_CLOSE,kernelClose)
+			# # 2. Extract contour
+			# contours,h=cv2.findContours(maskClose.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+			
+			#find the contours 
+			contours,h=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+			
+			# Was going to implement a scheme that forces worker process to put frame
+			# back in order, but didn't get to use
+			#while (p_end_turn.value != 3):
+			#	a = 1 # wait
+			#p_end_turn.value = 1
+			receive_contour_queue.put(contours)
+			#print("processor_3 : put contour successfully\n")
+		else:
+			#print("Processor 3 Didn't Receive Frame, sleep for 10ms")
+			time.sleep(0.01)
+		currentTime = datetime.now()
+		currentTime_ms = currentTime.second *1000 + currentTime.microsecond/1000
 		#print ("Processor 3 Processing Time: " + str(currentTime_ms-startTime_ms))
 	print("Quiting Processor 3")
 	
@@ -341,17 +353,16 @@ if __name__ == '__main__':
 	p_end_turn = Value('i', 1)
 	send_frame_queue = Queue()#send frame to queue 
 	receive_contour_queue = Queue()# send the processed contour to the queue
-	send_motor_queue = Queue()
 	p_start_lock = Lock() #Safety lock, but didnt use
 	p_end_lock = Lock() #Safety lock, but didnt use
 	
-	p0 = Process(target=recognize_balloon, args=(run_flag, send_frame_queue, receive_contour_queue, send_motor_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
+	p0 = Process(target=recognize_balloon, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
 	p1 = Process(target=process_contour_1, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
 	p2 = Process(target=process_contour_2, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
-		
-	p3 = Process(target=process_motor_3,  args=(run_flag, send_motor_queue, p_start_lock, p_end_lock))
+	p3 = Process(target=process_contour_3, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
+		p_start_lock, p_end_lock))
 		
 	
 	p0.start()
