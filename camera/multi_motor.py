@@ -68,7 +68,6 @@ def recognize_balloon(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_st
 	global count2
 	global count3
 	global tilt_time
-	tilt_lst = [0,0]
 	time_total_run = time.time()
 	x_diff = 0
 	y_diff = 0
@@ -78,18 +77,14 @@ def recognize_balloon(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_st
 	last_ydiff = 0
 	waiting_threshold = 10
 	calibration = False
-	print("I am here1")
 	print(run_flag.value)
 	
 	while(run_flag.value): 
 		try:
-			print("I am here")
 			#1. get a frame and show ret, 
 			_, frame = cap.read() 
-			print("I am here2")
 			# height 480; width 640; channel 3
 			#cv2.imshow('Capture', frame)
-			print("I am here")
 			#2. change to hsv model 
 			hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) 
 			#3. Threshold the HSV image to get only red colors and get mask 
@@ -108,12 +103,12 @@ def recognize_balloon(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_st
 				
 			else: 
 				#only put the mask in queue if it has past 10ms and there are less than 4 masks in queue
-				if (delta_time_tol_ms > waiting_threshold) and (send_frame_queue.qsize() < 3) :
+				if (delta_time_tol_ms > waiting_threshold) and (send_frame_queue.qsize() < 2) :
 					start_queue = cur_time # Update last send to queue time
 					send_frame_queue.put(mask)  # put mask in queue
 					print("send_frame_queue", send_frame_queue.qsize())
 					count_put += 1
-					#print("put the mask to queue\n")
+					print("put the mask to queue\n")
 				
 			#if ((time.time()-last_contour_receive_time) < waiting_threshold/1000.):
 				#cv2.circle(frame, (cx, cy), 7, (255, 255, 255), -1) #Draw center of object
@@ -152,7 +147,7 @@ def process_contour_1(run_flag, send_frame_queue, receive_contour_queue, p_start
 			mask = send_frame_queue.get() # Grab a frame
 			count1 = 1 + count1
 			print("count1   %d" % count1)
-			p_start_turn.value = 2 # and change it to worker process 2's turn
+			p_start_turn.value = 1 # and change it to worker process 2's turn
 			print("Processor 1's Turn - Receive Mask Successfully")
 			#print(mask.shape)
 			 # 1. Implement the open and close operation to get rid of noise and solidify an object
@@ -175,14 +170,123 @@ def process_contour_1(run_flag, send_frame_queue, receive_contour_queue, p_start
 	print("Quiting Processor 1")
 
 # Function for the Worker Process 2
-def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue,  p_start_turn, p_end_turn, p_start_lock, p_end_lock):
-	global count2 
+# def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock):
+	# global count2 
+	# print("I am here1")
+	# tilt_lst = [0,0]
+	# while (run_flag.value):
+		# print("I am here 2")
+		# if ((not receive_contour_queue.empty())):
+			# #last_contour_receive_time = time.time()
+			# contours = receive_contour_queue.get() # Extract contour
+			# print("Main Processor 2: Get the processed contour from queue\n")
+			# count2 +=1
+			# print("count2 ", count2)
+			# Area_list = []
+			# if 0 == len(contours):
+				# time.sleep(waiting_threshold/1000.)
+			# else:
+				# Area_list = [ cv2.contourArea(c) for c in contours ]
+				# #print (Area_list)
+				# maxindex = Area_list.index(max(Area_list))
+				# #print maxindex
+				# cnt = contours[maxindex]#Get the first contour 
+				# #print (contours[0])
+				# M = cv2.moments(cnt)#Calculat M of the first contour
+				# # print (M)
+				# #calcualte the center coordinate
+				# if M['m00'] != 0:	
+					# cx = int(M['m10']/M['m00'])
+					# cy = int(M['m01']/M['m00'])
+					# area = M['m00']
+					# #PID control Algo to calculate strength to control servo
+					# x_diff = abs(cx - center_x)
+					# y_diff = abs(cy - center_y)
+					# print("x_bar=%f, y_bar= %f" % (cx,cy))
+					# print("x_diff= %f, y_diff= %f" % (x_diff,y_diff))
+					# print("area = %f" % area)
+					# count_print_x += 1
+					# kp_x_left = 3
+					# kd_x_left = 0.005
+					
+					# kp_x_right = 3
+					# kd_x_right = 0.005
+					
+					# kp_y = 6
+					# kd_y = 0.001
+		
+					# proportional_x_left = x_diff/(x_res/2.0)
+					# proportional_x_right = x_diff/(x_res/2.0)
+					# proportional_y = y_diff/(y_res/2.0)
+					
+					# derivative_x = (last_xdiff - x_diff)/(time.time() - start_time)
+					# derivative_y = (last_xdiff - y_diff)/(time.time() - start_time)
+					# derivative_z = (last_area - area)/(time.time() - start_time)
+					
+					# start_time = time.time()
+					# #print("derivative_x: " + str(derivative_x))
+					# #print("derivative_x*kd_x: " + str(derivative_x*kd_x))
+					# start_time = time.time()
+					# strength_x_left = proportional_x_left*kp_x_left - derivative_x*kd_x_left
+					# strength_x_right = proportional_x_right*kp_x_right - derivative_x*kd_x_right
+					# strength_y = proportional_y*kp_y - derivative_y*kd_y
+					# #print "strength:"
+					# #print strength_x 
+				
+				# #Assume the left and top corner is (0,0)
+				# if (x_diff <= x_tlr):
+					# a = 1
+					# #do nothing within tolerance range
+				# elif (cx > center_x):
+					# control_wheels()
+					# print('the car need to turn right and move forward\n')
+				# else:
+					# control_wheels()
+					# print('the car need to turn left and mvoe forward\n')
+				# if (y_diff <= y_tlr):
+					# # do nothing within tolerance range
+					# b = 1
+				# elif (cy > center_y):
+					# tilt_lst[0] = 1
+					# tilt_lst[1] = strength_y
+					# #print('the camera need to raise its head up\n')
+					
+				# else:
+					# tilt_lst[0] = -1
+					# tilt_lst[1] = strength_y
+					# #print('the camera need to low its head down\n')
+				# length_time = time.time() - tilt_time
+				# tilt_time = time.time()
+				# last_area = area
+				# last_xdiff = x_diff
+				# last_ydiff = y_diff
+				# print(tilt_lst)
+				# print(send_motor_queue.qsize())
+				# print(tilt_lst)
+				# if (send_motor_queue.qsize() < 3) :
+					# send_motor_queue.put(tilt_lst)  # put mask in queue
+					# print("send_motor_queue", send_motor_queue.qsize())
+					# #count_motor_put += 1
+					# print("put the tilt to queue\n")
+				# print("tilt time", length_time)
+		# else:
+			# print("Processor 2 Didn't Receive Frame, sleep for 10ms")
+			# time.sleep(0.01)
+		# #print ("Processor 2 Processing Time: " + str(currentTime_ms-startTime_ms))
+	# print("Quiting Processor 2")
+	
+# Function for the Worker Process 3
+def process_motor_3(run_flag, receive_contour_queue, p_start_lock, p_end_lock):
+	global count3
 	while (run_flag.value):
+		#startTime = datetime.now()
+		#startTime_ms = startTime.second *1000 + startTime.microsecond/1000
 		if ((not receive_contour_queue.empty())):
-			last_contour_receive_time = time.time()
+			#last_contour_receive_time = time.time()
 			contours = receive_contour_queue.get() # Extract contour
-			print("Main Processor: Get the processed contour from queue\n")
-			
+			print("Main Processor 3: Get the processed contour from queue\n")
+			count3 +=1
+			print("count3 ", count3)
 			Area_list = []
 			if 0 == len(contours):
 				time.sleep(waiting_threshold/1000.)
@@ -203,9 +307,9 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue,  p_st
 					#PID control Algo to calculate strength to control servo
 					x_diff = abs(cx - center_x)
 					y_diff = abs(cy - center_y)
-					#print("x_bar=%f, y_bar= %f" % (cx,cy))
-					#print("x_diff= %f, y_diff= %f" % (x_diff,y_diff))
-					#print("area = %f" % area)
+					print("x_bar=%f, y_bar= %f" % (cx,cy))
+					print("x_diff= %f, y_diff= %f" % (x_diff,y_diff))
+					print("area = %f" % area)
 					count_print_x += 1
 					kp_x_left = 3
 					kd_x_left = 0.005
@@ -240,10 +344,10 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue,  p_st
 					#do nothing within tolerance range
 				elif (cx > center_x):
 					control_wheels()
-					#print('the car need to turn right and move forward\n')
+					print('the car need to turn right and move forward\n')
 				else:
 					control_wheels()
-					#print('the car need to turn left and mvoe forward\n')
+					print('the car need to turn left and mvoe forward\n')
 				if (y_diff <= y_tlr):
 					# do nothing within tolerance range
 					b = 1
@@ -262,40 +366,25 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue,  p_st
 				last_xdiff = x_diff
 				last_ydiff = y_diff
 				print(tilt_lst)
-				print(send_motor_queue.qsize())
-				print(tilt_lst)
-				if (send_motor_queue.qsize() < 3) :
-					send_motor_queue.put(tilt_lst)  # put mask in queue
-					print("send_motor_queue", send_motor_queue.qsize())
-					#count_motor_put += 1
-					print("put the tilt to queue\n")
+				#print(send_motor_queue.qsize())
+				# print(tilt_lst)
+				# if (send_motor_queue.qsize() < 3) :
+					# send_motor_queue.put(tilt_lst)  # put mask in queue
+					# print("send_motor_queue", send_motor_queue.qsize())
+					# #count_motor_put += 1
+					# print("put the tilt to queue\n")
 				print("tilt time", length_time)
-		else:
-			#print("Processor 2 Didn't Receive Frame, sleep for 10ms")
-			time.sleep(0.01)
-		currentTime = datetime.now()
-		currentTime_ms = currentTime.second *1000 + currentTime.microsecond/1000
-		#print ("Processor 2 Processing Time: " + str(currentTime_ms-startTime_ms))
-	print("Quiting Processor 2")
-	
-# Function for the Worker Process 3
-def process_motor_3(run_flag, send_motor_queue, p_start_lock, p_end_lock):
-	global count3
-	while (run_flag.value):
-		#startTime = datetime.now()
-		#startTime_ms = startTime.second *1000 + startTime.microsecond/1000
-		if (not send_motor_queue.empty()):
-			tilt_lst = send_motor_queue.get()
-			print("get motor queue successfully")
-			count3 += 1
-			print("count3  %d" % count3)
-			for i in range(1,4):
-				rotate_camera(tilt_lst[0],tilt_lst[1])
-				if (not send_motor_queue.empty()):
-					break
-				time.sleep(10/1000.)
+				# tilt_lst = send_motor_queue.get()
+				# print("get motor queue successfully")
+				# count3 += 1
+				# print("count3  %d" % count3)
+				for i in range(1,4):
+					rotate_camera(tilt_lst[0],tilt_lst[1])
+					if (not send_motor_queue.empty()):
+						break
+					time.sleep(10/1000.)
 		else: 
-			#print("Processor 3 didnt receive the tilt list\n")
+			print("Processor 3 didnt receive the tilt list\n")
 			time.sleep(0.01)
 		#print ("Processor 3 Processing Time: " + str(currentTime_ms-startTime_ms))
 	print("Quiting Processor 3")
@@ -343,19 +432,19 @@ if __name__ == '__main__':
 	p1 = Process(target=process_contour_1, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn,
 		p_start_lock, p_end_lock))
 		
-	p2 = Process(target=calculate_contour_2, args=(run_flag, receive_contour_queue, send_motor_queue,  p_start_turn, p_end_turn, p_start_lock, p_end_lock))
+	# p2 = Process(target=calculate_contour_2, args=(run_flag, receive_contour_queue, send_motor_queue,  p_start_turn, p_end_turn, p_start_lock, p_end_lock))
 		
 	p3 = Process(target=process_motor_3, args=(run_flag, send_motor_queue, p_start_lock, p_end_lock))
 		
 	
 	p0.start()
 	p1.start()
-	p2.start()
+	# p2.start()
 	p3.start()
 	# Wait for four processes to safely exit
 	p0.join()
 	p1.join()
-	p2.join()
+	# p2.join()
 	p3.join()
 	
 	#Turn off cv2 window
