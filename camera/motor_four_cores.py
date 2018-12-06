@@ -7,13 +7,15 @@ import RPi.GPIO as GPIO
 import sys
 import subprocess
 import pigpio
-from rrb3 import *
-from random import randint
 
-BATTERY_VOLTS = 7
-MOTOR_VOLTS = 5
+from motor_controller import motor_controller
 
-rr = RRB3(BATTERY_VOLTS, MOTOR_VOLTS)
+# from rrb3 import *
+
+# BATTERY_VOLTS = 7
+# MOTOR_VOLTS = 5
+
+# rr = RRB3(BATTERY_VOLTS, MOTOR_VOLTS)
  
 #set fro broadcom numbering not board numbers
 GPIO.setmode(GPIO.BCM)
@@ -171,8 +173,8 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_sta
 	global tilt_time
 	x_diff = 0
 	y_diff = 0
-	area = 0
-	last_area = 0
+	area_diff = 0
+	last_areaDiff = 0
 	last_xdiff = 0
 	last_ydiff = 0
 	start_time = 0
@@ -206,48 +208,62 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_sta
 					cy = int(M['m01']/M['m00'])
 					area = M['m00']
 					#PID control Algo to calculate strength to control servo
-					x_diff = abs(cx - center_x)
+					x_diff = cx - center_x
 					y_diff = abs(cy - center_y)
+					area_diff = area - area_ref
 					# #print("x_bar=%f, y_bar= %f" % (cx,cy))
 					# #print("x_diff= %f, y_diff= %f" % (x_diff,y_diff))
 					# #print("area = %f" % area)
-					kp_x_left = 3
-					kd_x_left = 0.005
 					
-					kp_x_right = 3
-					kd_x_right = 0.005
+					#### PID Parameters ####
+					# kp_x = 3
+					# kd_x = 0
+					### ZH PID
+					Ku = 3
+					kp_x = Ku*0.6
+					Tu = 2.2
+					Td = Tu/8
+					kd_x = kp_x*Td
+					
+					kp_z = 6
+					kd_z = 0
 					
 					kp_y = 8
 					kd_y = 0.005
 		
-					proportional_x_left = x_diff/(x_res/2.0)
-					proportional_x_right = x_diff/(x_res/2.0)
+					proportional_x = x_diff
 					proportional_y = y_diff/(y_res/2.0)
+					proportional_z = area_diff
 					
 					derivative_x = (last_xdiff - x_diff)/(time.time() - start_time)
 					derivative_y = (last_ydiff - y_diff)/(time.time() - start_time)
-					derivative_z = (last_area - area)/(time.time() - start_time)
+					derivative_z = (last_areaDiff - area_Diff)/(time.time() - start_time)
 					
 					start_time = time.time()
 					##print("derivative_x: " + str(derivative_x))
 					##print("derivative_x*kd_x: " + str(derivative_x*kd_x))
-					start_time = time.time()
-					strength_x_left = proportional_x_left*kp_x_left - derivative_x*kd_x_left
-					strength_x_right = proportional_x_right*kp_x_right - derivative_x*kd_x_right
-					strength_y = proportional_y*kp_y - derivative_y*kd_y
+					#start_time = time.time()
+					strength_x = proportional_x*kp_x - derivative_x*kd_x
+					strength_z = proportional_z*kp_z - derivative_z*kd_z
 					##print "strength:"
 					##print strength_x 
 				
 				#Assume the left and top corner is (0,0)
-				if (x_diff <= x_tlr):
+				if (abs(x_diff) <= x_tlr):
 					a = 1
+					controller.set_control( 0, 0)
 					#do nothing within tolerance range
-				elif (cx > center_x):
-					control_wheels()
-					#print('the car need to turn right and move forward\n')
+				else:                                                        
+					#controller.set_control( 0., strength_x*0.05)
+					print('the car need to turn left and mvoe forward\n')
+					
+				if (abs(area_diff) <= area_tlr):
+					c = 1
+					controller.set_control( 0, 0)
 				else:
-					control_wheels()
-					#print('the car need to turn left and mvoe forward\n')
+					controller.set_control( strength_area*0.005, 0.)
+					print("area didn't meet the reference")
+					
 				if (y_diff <= y_tlr):
 					# do nothing within tolerance range
 					b = 1
@@ -265,6 +281,7 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_sta
 				last_area = area
 				last_xdiff = x_diff
 				last_ydiff = y_diff
+				last_areaDiff = area_diff
 				# #print(tilt_lst)
 				# #print(send_motor_queue.qsize())
 				#print(tilt_lst)
@@ -311,11 +328,14 @@ upper_red = np.array([180,255,255])
 
 x_res = 640 #320 
 y_res = 480 #240 
+resolution = x_res*y_res
 center_x = x_res/2
 center_y = y_res/2
+area_ref = resolution/2
 tolerance = 5 / 100.
 x_tlr = x_res * tolerance
 y_tlr = y_res * tolerance
+area_tlr = resolution * tolerance
 # Setting Kernel Convolution Parameters
 kernelOpen=np.ones((5,5))
 kernelClose=np.ones((20,20))
