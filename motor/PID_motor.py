@@ -98,7 +98,7 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 			mask = cv2.inRange(hsv, lower_red, upper_red) #lower than 
 			# print(mask)
 			start_time_count = time.time()
-			cv2.imshow('Mask_first', mask)
+			#cv2.imshow('Mask_first', mask)
 			print('count1  %d, count2   %d, count3   %d'%(count1, count2, count3))
 			
 			# #find the contours 
@@ -144,9 +144,9 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 							area = M['m00']					# area for velocity
 							#PID control Algo to calculate strength to control servo
 							#x_diff = abs(cx - center_x) # should it be absolute? it can be negative as well
-							x_diff = cx - center_x
+							x_diff = center_x - cx
 							y_diff = abs(cy - center_y)
-							area_diff = area - area_ref
+							area_diff = area_ref - area
 							#print("x_bar=%f, y_bar= %f" % (cx,cy))
 							#print("x_diff= %f, y_diff= %f" % (x_diff,y_diff))
 							#print("area = %f" % area)
@@ -204,7 +204,7 @@ def recognize_balloon(run_flag, send_frame_queue, receive_contour_queue, p_start
 							controller.set_control( 0, 0)
 							#do nothing within tolerance range
 						else:                                                        
-							#controller.set_control( 0., strength_x*0.05)
+							controller.set_control( 0., strength_x*0.05)
 							print('the car need to turn left and mvoe forward\n')
 							
 						if (abs(area_diff) <= area_tlr):

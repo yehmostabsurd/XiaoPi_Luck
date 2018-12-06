@@ -20,15 +20,14 @@ class motor_controller():
 	self.maxspeed = 2000. # 2m/s => 2000 mm/s
         
     def set_control(self, vel, omega):
-	run_time = time.time()
-        try:
+	try:
 		vl = vel - (self.b * omega) / 2
 		vr = vel + (self.b * omega) / 2
 		
 		speedl = abs(vl) / self.maxspeed
 		speedr = abs(vr) / self.maxspeed
-		# print("speed1  ", speedl)
-		# print("speedr  ", speedr)
+		print("speed1  ", speedl)
+		print("speedr  ", speedr)
 	
                 if speedl > 1.: print("speedl {} exceed maximum value 1.0".format(speedl) )        
                 speedl = 1. if speedl > 1. else speedl
@@ -43,9 +42,8 @@ class motor_controller():
 
 		dl = 1 if vl > 0 else 0
 		dr = 1 if vr > 0 else 0
-                # print("sending motor control speedl {} in {} dir, speedr {} in {} dir".format(speedl, dl, speedr, dr) )
+                print("sending motor control speedl {} in {} dir, speedr {} in {} dir".format(speedl, dl, speedr, dr) )
                 self.rr.set_motors(speedl, dl, speedr, dr)
-                print("run_time in controller is ", time.time()-run_time)
                 #time.sleep(0.03)
 	except KeyboardInterrupt as e:
 		print("Exiting motor_controller.py!!")

@@ -15,14 +15,23 @@ esl_time = 0
 t = 2.3
 dc = t / 20 * 100 * 10000 #(1.5-2.3)
 # pi_hw.hardware_PWM(motorPinT, 50, dc) # 50hz, 7.5 % duty cycle(1.5 msec)
-while esl_time < 30:
-	els_time = time.time() - start_time
-	pi_hw.hardware_PWM(motorPinT, 50, dc) # 50hz, 7.5 % duty cycle(1.5 msec)
-	t -= 0.1
-	dc = t / 20 * 100 * 10000 #(1.5-2.3)
-	time.sleep(1)
+#while esl_time < 5:
+	#els_time = time.time() - start_time
+	#pi_hw.hardware_PWM(motorPinT, 50, dc) # 50hz, 7.5 % duty cycle(1.5 msec)
+	#t -= 0.1
+	#print(t)
+	#dc = t / 20 * 100 * 10000 #(1.5-2.3)
+	#time.sleep(1)
 
-	
+dc = 1.4 / 20 * 100 * 10000 #(1.5-2.3)
+pi_hw.hardware_PWM(motorPinT, 50, dc) # 50hz, 7.5 % duty cycle(1.5 msec)
+time.sleep(3)	
+
+dc = 1.3 / 20 * 100 * 10000 #(1.5-2.3)
+print(dc)
+pi_hw.hardware_PWM(motorPinT, 50, dc) # 50hz, 7.5 % duty cycle(1.5 msec)
+time.sleep(3)
+
 	
 # pi_hw.hardware_PWM(motorPinT, 50, 75000) # 50hz, 7.5 % duty cycle(1.5 msec)
 # time.sleep(2)

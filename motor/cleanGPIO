@@ -1,0 +1,5 @@
+#!/bin/bash
+
+python kill_tilt.py
+python clean.py
+pkill -9 python

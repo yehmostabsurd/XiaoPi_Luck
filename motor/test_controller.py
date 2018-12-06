@@ -10,11 +10,18 @@ else:
     omega = 0.
 
 controller = motor_controller()
+count = 0
+run_time = time.time()
 
-while True:
-    try:
-        controller.set_control(vel, omega)
-        #time.sleep(0.03)
-    except KeyboardInterrupt:
-        controller.clean()
-        print("clean speed controller")
+controller.set_control(vel, omega)
+time.sleep(2)
+#while count < 10000:
+    #try:
+        #controller.set_control(vel, omega)
+	#count += 1
+        ##time.sleep(0.03)
+    #except KeyboardInterrupt:
+        #controller.clean()
+        #print("clean speed controller")
+		
+print("the average run time is ",(time.time()-run_time))
