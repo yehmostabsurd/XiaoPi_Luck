@@ -48,30 +48,47 @@ while elapse_time < 80:
 			x,y = pos
 			#judge whether touch the area of 'Play'
 			if(x > 190 and x < 290 and y >130 and y < 230):
-				#press the stop button	
-				print("press Play button\n")
+				#press the play button	
+				text = "I am trying to pop the balloon"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
 				build_buttons(run_buttons)
-				print  str(pos)
-				#os.system("python try_play.py")
-				os.system("python wheel_tilt_four_cores.py")
 			
-			#judge whether touch the area of 'Start'
+				os.system("python wheel_tilt_four_cores.py")
+				
+				text = "I have poped a balloon"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
+				build_buttons(run_buttons)
+			
+			#judge whether touch the area of 'Calibration'
 			if(x > 20 and x < 160 and y > 250 and 300 > y):
-				#press the Start button
-				start_button_press = 1
-				print ("Press Calibration button")
-				print  str(pos)
+				#press the Calibration button
+				text = "I am looking for a balloon"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
+				build_buttons(run_buttons)
+				
 				os.system("python try_calibration.py")
 				
-			#judge whether touch the area of 'quit'
+				text = "I have calibrated, ready to play"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
+				build_buttons(run_buttons)
+				
+			#judge whether touch the area of 'Celebration'
 			if (y > 250 and 300 > y and x < 460 and 300 < x):
-				print("press Celebration button\n")
-				print  str(pos)
+				text = "Yeah~ Let's celebrate~~~~"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
+				build_buttons(run_buttons)
 				os.system("python celebration.py")
 				
 			if(x > 210 and x < 270 and y > 300 and 360 > y):
-				print "Button quit!" + str(pos)
-				# quit()
+				text = "ByeBye~ Have A Good Day!!!"
+				run_buttons.clear()
+				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
+				build_buttons(run_buttons)
 				exit()
 	
-exit()
+	
