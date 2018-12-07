@@ -46,7 +46,7 @@ def rotate_camera(dir, strength):
 			currentDutyCycleT = full_down
 	#camera down
 	else: 
-		currentDutyCycleT = currentDutyCycleT + strength * increment *2
+		currentDutyCycleT = currentDutyCycleT + strength * increment 
 		if currentDutyCycleT > full_down:
 			currentDutyCycleT = full_down
 	pi_hw.hardware_PWM(motorPinT, 50, currentDutyCycleT) #50 Hz Freq.
@@ -155,6 +155,8 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 	last_ydiff = 0
 	start_time = 0
 	waiting_threshold = 10
+	count = 0
+	Period = 200
 	#print("I am here1")
 	tilt_lst = [0,0]
 	global controller
@@ -171,6 +173,19 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 					print("Calibration --- finding balloon\n\n\n\n\n")
 					# controller.set_control( 0, 0)
 					controller.set_control( 0, 10)
+					if count < Period/2:
+						tilt_lst[0] = 1
+						tilt_lst[1] = 1.0
+					if count >= Period/2 and count < Period:
+						tilt_lst[0] = -1
+						tilt_lst[1] = 1.0 
+					if count == Period:
+						count = 0
+					count += 1
+					time.sleep(0.02)
+					print currentDutyCycleT
+					if (send_motor_queue.qsize() < 2) :
+						send_motor_queue.put(tilt_lst)  # put mask in queue
 					#time.sleep(waiting_threshold/1000.)
 				else:
 					run_flag.value = 0

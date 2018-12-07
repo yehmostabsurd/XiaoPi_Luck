@@ -203,7 +203,7 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 					print("Calibration --- finding balloon\n\n\n\n\n")
 					# controller.set_control( 0, 0)
 					controller.set_control( 0, 10)
-					if count_no_contour > 100:
+					if count_no_contour > 150:
 						run_flag.value = 0
 						controller.clean()
 						if run_flag.value == 0:
@@ -316,8 +316,8 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 						#print("put the tilt to queue\n")
 					#print("tilt time", length_time)
 					# print("processor 2 send once")
-					print("processor 2 time ", time.time() - run_time)
-					print("\n\n\n\n")
+					# print("processor 2 time ", time.time() - run_time)
+					# print("\n\n\n\n")
 			else:
 				#print("Processor 2 Didn't Receive Frame, sleep for 10ms")
 				time.sleep(0.01)

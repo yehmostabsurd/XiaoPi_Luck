@@ -30,14 +30,14 @@ class motor_controller():
 		# print("speed1  ", speedl)
 		# print("speedr  ", speedr)
 	
-                if speedl > 1.: print("speedl {} exceed maximum value 1.0".format(speedl) )        
+                # if speedl > 1.: print("speedl {} exceed maximum value 1.0".format(speedl) )        
                 speedl = 1. if speedl > 1. else speedl
-                if speedl < 0.: print("speedl {} is below minimum value 0.".format(speedl) )
+                # if speedl < 0.: print("speedl {} is below minimum value 0.".format(speedl) )
                 speedl = 0. if speedl < 0. else speedl
 
-                if speedr > 1.: print("speedr {} exceed maximum value 1.0".format(speedr) )
+                # if speedr > 1.: print("speedr {} exceed maximum value 1.0".format(speedr) )
                 speedr = 1. if speedr > 1. else speedr
-                if speedr < 0.: print("speedr {} is below minimum value 0.".format(speedr)) 
+                # if speedr < 0.: print("speedr {} is below minimum value 0.".format(speedr)) 
                 speedr = 0. if speedr < 0. else speedr
 
 
@@ -45,7 +45,7 @@ class motor_controller():
 		dr = 1 if vr > 0 else 0
                 # print("sending motor control speedl {} in {} dir, speedr {} in {} dir".format(speedl, dl, speedr, dr) )
                 self.rr.set_motors(speedl, dl, speedr, dr)
-                print("run_time in controller is ", time.time()-run_time)
+                # print("run_time in controller is ", time.time()-run_time)
                 #time.sleep(0.03)
 	except KeyboardInterrupt as e:
 		print("Exiting motor_controller.py!!")

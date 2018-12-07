@@ -15,10 +15,10 @@ while 15>(time.time() - start_time):
         time.sleep(2)
         value += 1
     if value == 3:
-        controller.set_control( 1000., 0.)
-        time.sleep(2)
+        controller.set_control( 2000., 0.)
+        time.sleep(1)
         value += 1
     if value == 4:
-        controller.set_control( -1000., 0.)
+        controller.set_control( -2000., 0.)
         time.sleep(2)
         value = 1

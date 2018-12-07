@@ -35,7 +35,7 @@ elapse_time = 0
 build_buttons(run_buttons)
 start_time = time.time()
 
-while elapse_time < 80:
+while elapse_time < 120:
 	elapse_time = time.time() - start_time
 	time.sleep(0.2) 
 	#touching the buttons on the screen
