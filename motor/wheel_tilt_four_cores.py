@@ -1,3 +1,10 @@
+#########################################################
+### Yanling Wu (yw996), Yeh Dawei(ty359) 			   ##
+### This is the main code for tracking the red balloon ##
+### and try to pop the balloon 						   ##
+#########################################################
+
+
 from multiprocessing import Process, Queue, Value, Lock, Array
 import time
 import numpy as np
@@ -17,21 +24,16 @@ GPIO.setmode(GPIO.BCM)
 motorPinT = 12
 # connect to pi gpio Daemon
 pi_hw = pigpio.pi()
-
-currentDutyCycleT = 115000 # look at forward 
-
-#Control the wheels
-def control_wheels():
-	# print("control_wheels Funtion :  change the wheels\n")
-	pass
-	
+#set the original position of tilt of camera
+currentDutyCycleT = 115000 # look at forward 	
 
 #Rotate the camera to make the balloon in the center of the image
 def rotate_camera(dir, strength):
 	global currentDutyCycleT
 	full_up = 65000 # 1.3ms -> up
 	full_down = 115000 # 2.3ms -> forward
-	increment = (full_down - full_up) / 200  #200
+	#increment is 200 everytime
+	increment = (full_down - full_up) / 200  
 	#camera up
 	if dir == 1: 
 		currentDutyCycleT = currentDutyCycleT - strength * increment
@@ -99,7 +101,7 @@ def recognize_balloon(send_frame_queue, p_start_turn, p_end_turn, p_start_lock, 
 					# print("send_frame_queue", send_frame_queue.qsize())
 					count_put += 1
 					#print("put the mask to queue\n")
-				
+				# draw the contour of the balloon in the opencv interface but we comment it when runing to decrease the latency
 			#if ((time.time()-last_contour_receive_time) < waiting_threshold/1000.):
 				#cv2.circle(frame, (cx, cy), 7, (255, 255, 255), -1) #Draw center of object
 				#cv2.drawContours(frame,contours,-1,(255,0,0),3) #Draw contour of object
@@ -138,7 +140,7 @@ def process_contour_1(send_frame_queue, receive_contour_queue, p_start_turn, p_e
 			if ((not send_frame_queue.empty()) and (p_start_turn.value == 1)):
 				# print("1 send_frame_queue  ", send_frame_queue.qsize())
 				mask = send_frame_queue.get() # Grab a frame
-				count1 = 1 + count1
+				#count1 = 1 + count1
 				#print("count1   %d" % count1)
 				p_start_turn.value = 1 # and change it to worker process 2's turn
 				#print("Processor 1's Turn - Receive Mask Successfully")
@@ -151,8 +153,6 @@ def process_contour_1(send_frame_queue, receive_contour_queue, p_start_turn, p_e
 				
 				#find contours
 				contours,h=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-				# if receive_contour_queue.qsize() > 1:
-					# receive_contour_queue.get()
 				receive_contour_queue.put(contours) # Put contour back 
 				#print("processor_1 : put contour successfully\n")
 				# print("1 receive_contour_queue  ", receive_contour_queue.qsize())
@@ -188,21 +188,36 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 	count_no_contour = 0
 	#print("I am here1")
 	tilt_lst = [0,0]
+	count = 0
+	Period = 200
 	controller = motor_controller()
 	while (run_flag.value):
 		try:
 			if ((not receive_contour_queue.empty())):
 				#last_contour_receive_time = time.time()
 				contours = receive_contour_queue.get() # Extract contour
-				print("Main Processor 2: Get the processed contour from queue\n")
-				print("2 receive_contour_queue  ", receive_contour_queue.qsize())
+				# print("Main Processor 2: Get the processed contour from queue\n")
+				# print("2 receive_contour_queue  ", receive_contour_queue.qsize())
 				count2 +=1
 				#print("count2 ", count2)
 				Area_list = []
 				if 0 == len(contours):
-					print("Calibration --- finding balloon\n\n\n\n\n")
+					# print("Calibration --- finding balloon\n\n\n\n\n")
 					# controller.set_control( 0, 0)
 					controller.set_control( 0, 10)
+					if count < Period/2:
+						tilt_lst[0] = 1
+						tilt_lst[1] = 1.0
+					if count >= Period/2 and count < Period:
+						tilt_lst[0] = -1
+						tilt_lst[1] = 1.0 
+					if count == Period:
+						count = 0
+					count += 1
+					time.sleep(0.01)
+					# print currentDutyCycleT
+					if (send_motor_queue.qsize() < 2) :
+						send_motor_queue.put(tilt_lst)
 					if count_no_contour > 150:
 						run_flag.value = 0
 						controller.clean()
@@ -272,15 +287,7 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 						##print "strength:"
 						##print strength_x 
 					
-					#Assume the left and top corner is (0,0)
-					#if (abs(x_diff) <= x_tlr):
-						#a = 1
-						#controller.set_control( 0, 0)
-						##do nothing within tolerance range
-					#else:                                                        
-						#controller.set_control( 0., strength_x*0.05)
-						#print('the car need to turn left and mvoe forward\n')
-						
+					#Assume the left and top corner is (0,0)						
 					if ((abs(area_diff) <= area_tlr or currentDutyCycleT == 65000) and abs(x_diff) <= x_tlr ):
 						c = 1
 						controller.set_control( 0, 0)
@@ -312,12 +319,8 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 					if (send_motor_queue.qsize() < 2) :
 						send_motor_queue.put(tilt_lst)  # put mask in queue
 						#print("send_motor_queue", send_motor_queue.qsize())
-						#count_motor_put += 1
-						#print("put the tilt to queue\n")
 					#print("tilt time", length_time)
-					# print("processor 2 send once")
-					# print("processor 2 time ", time.time() - run_time)
-					# print("\n\n\n\n")
+					# print("processor 2 time ", time.time() - run_time)#print the running time of processor 2
 			else:
 				#print("Processor 2 Didn't Receive Frame, sleep for 10ms")
 				time.sleep(0.01)

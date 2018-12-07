@@ -1,8 +1,13 @@
+#########################################################
+### Yanling Wu (yw996), Yeh Dawei(ty359)			   ##
+### This is the code to build the pygame interface     ##
+### to control the different modes.			 	       ##
+#########################################################
+
 import time
 from pygame.locals import *
 import pygame
 import os
-
 
 #initilization pygame
 pygame.init()
@@ -29,13 +34,14 @@ def build_buttons(buttons):
 		screen.blit(text_surface, rect)
 	pygame.display.flip()
 	
-#Some important variabels
+#Some variables
 elapse_time = 0 	
-	
-build_buttons(run_buttons)
 start_time = time.time()
 
-while elapse_time < 120:
+#build original buttons
+build_buttons(run_buttons)
+#Main loop
+while elapse_time < 1200:
 	elapse_time = time.time() - start_time
 	time.sleep(0.2) 
 	#touching the buttons on the screen
@@ -53,7 +59,7 @@ while elapse_time < 120:
 				run_buttons.clear()
 				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
 				build_buttons(run_buttons)
-			
+				#open the another file of main code
 				os.system("python wheel_tilt_four_cores.py")
 				
 				text = "I have poped a balloon"
@@ -68,7 +74,7 @@ while elapse_time < 120:
 				run_buttons.clear()
 				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
 				build_buttons(run_buttons)
-				
+				#open the another file of "Calibration"
 				os.system("python try_calibration.py")
 				
 				text = "I have calibrated, ready to play"
@@ -82,6 +88,7 @@ while elapse_time < 120:
 				run_buttons.clear()
 				run_buttons = {'Play':(240,180), 'Calibration':(90,280), 'Celebration':(390,280), "Quit":(240,330), text:(240,50)}
 				build_buttons(run_buttons)
+				#open the another file of "Celebration"
 				os.system("python celebration.py")
 				
 			if(x > 210 and x < 270 and y > 300 and 360 > y):

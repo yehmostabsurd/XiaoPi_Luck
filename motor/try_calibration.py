@@ -1,3 +1,9 @@
+###########################################################
+### Yanling Wu (yw996), Yeh Dawei(ty359) 		   		###
+### This is for calibrating the car to find the balloon ###
+### before it starts to play							###
+###########################################################
+
 from multiprocessing import Process, Queue, Value, Lock, Array
 import time
 import numpy as np
@@ -18,13 +24,8 @@ motorPinT = 12
 # connect to pi gpio Daemon
 pi_hw = pigpio.pi()
 
+#current postion mark
 currentDutyCycleT = 115000 # look at forward 
-
-#Control the wheels
-def control_wheels():
-	# print("control_wheels Funtion :  change the wheels\n")
-	pass
-	
 
 #Rotate the camera to make the balloon in the center of the image
 def rotate_camera(dir, strength):
@@ -132,8 +133,6 @@ def process_contour_1(send_frame_queue, receive_contour_queue, 	p_start_turn, p_
 			else:
 				##print("Processor 1 Didn't Receive Frame, sleep for 10ms")
 				time.sleep(0.01)
-			currentTime = datetime.now()
-			currentTime_ms = currentTime.second *1000 + currentTime.microsecond/1000
 			# print("processor 1 time \n\n\n\n ", time.time() - run_time)
 			##print ("Processor 1 Processing Time: " + str(currentTime_ms-startTime_ms))
 		except KeyboardInterrupt:
@@ -166,11 +165,11 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 			if ((not receive_contour_queue.empty())):
 				#last_contour_receive_time = time.time()
 				contours = receive_contour_queue.get() # Extract contour
-				print("Main Processor 2: Get the processed contour from queue\n")
-				print("2 receive_contour_queue  ", receive_contour_queue.qsize())
+				# print("Main Processor 2: Get the processed contour from queue\n")
+				# print("2 receive_contour_queue  ", receive_contour_queue.qsize())
 				Area_list = []
 				if 0 == len(contours):
-					print("Calibration --- finding balloon\n\n\n\n\n")
+					# print("Calibration --- finding balloon\n\n\n\n\n")
 					# controller.set_control( 0, 0)
 					controller.set_control( 0, 10)
 					if count < Period/2:
@@ -183,7 +182,7 @@ def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p
 						count = 0
 					count += 1
 					time.sleep(0.02)
-					print currentDutyCycleT
+					# print currentDutyCycleT
 					if (send_motor_queue.qsize() < 2) :
 						send_motor_queue.put(tilt_lst)  # put mask in queue
 					#time.sleep(waiting_threshold/1000.)

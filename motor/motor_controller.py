@@ -1,3 +1,9 @@
+#########################################################
+### Yanling Wu (yw996), Yeh Dawei(ty359) 			   ##
+### This is to create one class to control the DC      ##
+### motor controller					   			   ##
+#########################################################
+
 from rrb3 import *
 from random import randint
 
