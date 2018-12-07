@@ -11,12 +11,6 @@ import pigpio
 
 from motor_controller import motor_controller
 
-# from rrb3 import *
-
-# BATTERY_VOLTS = 7
-# MOTOR_VOLTS = 5
-# rr = RRB3(BATTERY_VOLTS, MOTOR_VOLTS)
- 
 #set fro broadcom numbering not board numbers
 GPIO.setmode(GPIO.BCM)
 # Set Up Pan Tilt Servo HardwarePWM Pins
@@ -61,13 +55,14 @@ def rotate_camera(dir, strength):
 
 tilt_time = time.time() # record the length of giving order to tilt
 #Master Process --- recognize the red balloon
-def recognize_balloon(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
+def recognize_balloon(send_frame_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock): 
 	last_contour_receive_time = 0
 	start_queue = datetime.now()
 	count_put = 0
 	global count1
 	global count2
 	global count3
+	global run_flag
 	time_total_run = time.time()
 	waiting_threshold = 10
 	calibration = False
@@ -131,8 +126,9 @@ def recognize_balloon(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_st
 		
 	#print("Quit Processor 0")
 	
-def process_contour_1(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock):
+def process_contour_1(send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock):
 	global count1 
+	global run_flag
 	while (run_flag.value):
 		try:
 			run_time = time.time()
@@ -174,11 +170,12 @@ def process_contour_1(run_flag, send_frame_queue, receive_contour_queue, p_start
 	#print("Quiting Processor 1")
 
 # Function for the Worker Process 2
-def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_start_lock, p_end_lock):
+def calculate_contour_2(receive_contour_queue, send_motor_queue, p_start_lock, p_end_lock):
 	global count2 
 	global tilt_time
 	global currentDutyCycleT
-	
+	global run_flag
+	# global p0,p1,p2,p3
 	x_diff = 0
 	y_diff = 0
 	area_diff = 0
@@ -187,29 +184,38 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_sta
 	last_xdiff = 0
 	last_ydiff = 0
 	start_time = 0
-	waiting_threshold = 10
+	waiting_threshold = 20
+	count_no_contour = 0
 	#print("I am here1")
 	tilt_lst = [0,0]
 	controller = motor_controller()
-	# print("I am here\n\n\n\n\n\n")
-	#print(run_flag.value)
 	while (run_flag.value):
 		try:
-			# print("I am here 2")
 			if ((not receive_contour_queue.empty())):
 				#last_contour_receive_time = time.time()
 				contours = receive_contour_queue.get() # Extract contour
-				# print("Main Processor 2: Get the processed contour from queue\n")
-				# print("2 receive_contour_queue  ", receive_contour_queue.qsize())
+				print("Main Processor 2: Get the processed contour from queue\n")
+				print("2 receive_contour_queue  ", receive_contour_queue.qsize())
 				count2 +=1
 				#print("count2 ", count2)
 				Area_list = []
 				if 0 == len(contours):
-					print("Calibration --- finding balloon\n")
+					print("Calibration --- finding balloon\n\n\n\n\n")
 					# controller.set_control( 0, 0)
 					controller.set_control( 0, 10)
-					#time.sleep(waiting_threshold/1000.)
+					if count_no_contour > 100:
+						run_flag.value = 0
+						controller.clean()
+						if run_flag.value == 0:
+							p0.terminate()
+							p1.terminate()
+							p2.terminate()
+							p3.terminate()
+						# yeh_David
+					time.sleep(waiting_threshold/1000.)
+					count_no_contour += 1
 				else:
+					count_no_contour = 0
 					run_time = time.time()
 					Area_list = [ cv2.contourArea(c) for c in contours ]
 					##print (Area_list)
@@ -325,8 +331,9 @@ def calculate_contour_2(run_flag, receive_contour_queue, send_motor_queue, p_sta
 	#print("Quiting Processor 2")
 	
 # Function for the Worker Process 3
-def process_motor_3(run_flag, send_motor_queue, p_start_lock, p_end_lock):
+def process_motor_3(send_motor_queue, p_start_lock, p_end_lock):
 	global count3
+	global run_flag
 	#print("you are there!")
 	while (run_flag.value):
 		run_time = time.time()
@@ -394,13 +401,13 @@ if __name__ == '__main__':
 	p_start_lock = Lock() #Safety lock, but didnt use
 	p_end_lock = Lock() #Safety lock, but didnt use
 	
-	p0 = Process(target=recognize_balloon, args=(run_flag, send_frame_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
+	p0 = Process(target=recognize_balloon, args=(send_frame_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
 	
-	p1 = Process(target=process_contour_1, args=(run_flag, send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
+	p1 = Process(target=process_contour_1, args=(send_frame_queue, receive_contour_queue, p_start_turn, p_end_turn, p_start_lock, p_end_lock))
 		
-	p2 = Process(target=calculate_contour_2, args=(run_flag, receive_contour_queue, send_motor_queue, p_start_lock, p_end_lock))
+	p2 = Process(target=calculate_contour_2, args=(receive_contour_queue, send_motor_queue, p_start_lock, p_end_lock))
 		
-	p3 = Process(target=process_motor_3, args=(run_flag, send_motor_queue, p_start_lock, p_end_lock))
+	p3 = Process(target=process_motor_3, args=(send_motor_queue, p_start_lock, p_end_lock))
 		
 	
 	p0.start()
