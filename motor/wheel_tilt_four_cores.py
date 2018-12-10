@@ -1,7 +1,7 @@
 #########################################################
 ### Yanling Wu (yw996), Yeh Dawei(ty359) 	       ##
 ### This is the main code for tracking the red balloon ##
-### and try to pop the balloon 			       ##
+### and try to pop the balloon 		       ##
 #########################################################
 
 
